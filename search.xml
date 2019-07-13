@@ -1,8 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title><![CDATA[01 单例设计模式]]></title>
+    <url>%2Fp%2Ffe68.html</url>
+    <content type="text"><![CDATA[单例设计模式01 序单例设计模式是日常开发中使用最为广泛的设计模式之一，这个设计模式的主要目的是在运行环境中保证只有一个类的实例存在。考虑这样一个现实场景：项目中大量使用xml或properities文件作为应用的配置信息，会在很多类中被读取使用，一般情况下，我们会单独声明一个Config类单独操作这些配置文件中的内容，然后通过new Config()类的方式进行操作配置文件信息，如果不加以控制，项目中将会创建很多Config()类实例，会严重浪费内存资源，事实上，只要存在一个Config()类实例就可以。 02 实现方式单例设计模式的特点：①单例类只能有一个实例；②单例类必须自己创建自己的唯一实例；③单例类必须给所有其他对象提供这一实例；目前很多网上资料将单例设计模式分为两种，一种是懒汉式，一种是饿汉式；接下来将通过案例分析单例模式的具体实现。 2.1 懒汉式 所谓懒汉式就是惰性加载，只有真正被使用时才进行对象创建。 原始版本 代码示例 2.1 1234567891011public class LazyModeSingleton &#123; private static LazyModeSingleton lazyModeSingleton=null; private LazyModeSingleton()&#123; &#125; public static LazyModeSingleton getInstance()&#123; if (null == lazyModeSingleton)&#123; lazyModeSingleton = new LazyModeSingleton(); &#125; return lazyModeSingleton; &#125;&#125; 在代码示例2.1中，是我们最早接触单例设计模式的版本，在该版本中，我可以得到单例创建的特点： 声明构造函数为private，表明这个类不能被外部类创建多个对象，防止出现多实例； 因为构造函数为private，为了创建出对象，需要声明getInstance()方法为static，这样可以在内部创建Singleton实例； 通过使用一个私有的变量保存创建的实例，并且需要是static修饰的； 在获取实例方法中，需要判定实例的生成状态，已经生成则直接返回； 注：该版本的单例设计模式会带来线程安全问题。 加锁版本 在原始版本中，存在线程安全问题，如果线程A和线程B同时调用getInstance方法时，会出现同时为null的情况，这时候就会导致生成两个Singleton类实例。如何优化原始版本呢，具体如代码示例2.2所示： 1234567891011121314151617181920212223242526public class LazyModeSingleton &#123; private static LazyModeSingleton lazyModeSingleton=null; private LazyModeSingleton()&#123; &#125; public static LazyModeSingleton getInstance()&#123; synchronized (LazyModeSingleton.class) &#123; if (null == lazyModeSingleton) &#123; lazyModeSingleton = new LazyModeSingleton(); &#125; &#125; return lazyModeSingleton; &#125;&#125;public class LazyModeSingleton &#123; private static LazyModeSingleton lazyModeSingleton=null; private LazyModeSingleton()&#123; &#125; public synchronized static LazyModeSingleton getInstance() &#123; if (null == lazyModeSingleton) &#123; lazyModeSingleton = new LazyModeSingleton(); &#125; return lazyModeSingleton; &#125;&#125; 在代码示例2.2中，确实解决了线程安全的问题，但是出现并发量较大的情况时，每个线程都会调用getInstance()方法，使用synchronized内置锁，会严重影响性能。 注：该版本的单例设计模式会带来性能问题。 double-checked版本 代码示例2.2，它确实能够保证线程安全，但是会严重影响性能，那是否可以对代码示例2.2进行优化呢，可以采用double-checked方式进行优化，具体如代码示例如2.3所示： 1234567891011121314public class LazyModeSingleton &#123; private static LazyModeSingleton lazyModeSingleton=null; private LazyModeSingleton()&#123; &#125; public static LazyModeSingleton getInstance()&#123; if (null == lazyModeSingleton)&#123; synchronized (LazyModeSingleton.class) &#123; if (null == lazyModeSingleton) &#123; lazyModeSingleton = new LazyModeSingleton(); &#125; &#125; &#125; return lazyModeSingleton; &#125; 似乎double-checked版本是完美的，事实上new LazyModeSingleton()操作并不是一个原子操作，它会做三件事，①在堆内存开辟一块空间；②调用构造函数，进行对象初始化；③将对象生成的内存地址返回给对象引用。处理器和编译器为了优化性能，会进行指令重排序，那么new操作可能会按照①-&gt;③-&gt;②进行，如果线程A执行②之前，CPU资源被线程B抢占了，此时LazyModeSingleton类实例不为空，将会直接返回，那么直接使用实例，会出现控制异常问题，因为LazyModeSingleton类还未初始化成功。 注：该版本的单例设计模式会带来空指针异常问题。 进化版本 代码示例2.4是double-checked版本的进一步优化写法，添加了volatile关键字修饰，它的作用有两个：①可见性；②禁止指令重排序； 1234567891011121314public class LazyModeSingleton &#123; private static volatile LazyModeSingleton lazyModeSingleton=null; private LazyModeSingleton()&#123; &#125; public static LazyModeSingleton getInstance()&#123; if (null == lazyModeSingleton)&#123; synchronized (LazyModeSingleton.class) &#123; if (null == lazyModeSingleton) &#123; lazyModeSingleton = new LazyModeSingleton(); &#125; &#125; &#125; return lazyModeSingleton; &#125; 注：使用该版本实现单例模式，前提是JDK1.5版本及之后 高阶版本 代码示例2.5是通过静态内部类实现的 12345678910public class LazyModeSingleton &#123; private LazyModeSingleton()&#123; &#125; private static class LazySingleton&#123; private static final LazyModeSingleton INSTANCE = new LazyModeSingleton(); &#125; public static LazyModeSingleton getInstance()&#123; return LazyModeSingleton.LazySingleton.INSTANCE; &#125;&#125; 完美版本 代码示例2.6是通过静态内部类实现的 1234567891011121314151617public class LazyModeSingleton &#123; private LazyModeSingleton()&#123; &#125; private enum LazySingleton&#123; INSTANCE; private LazyModeSingleton lazyModeSingleton; LazySingleton()&#123; lazyModeSingleton = new LazyModeSingleton(); &#125; public LazyModeSingleton getINSTANCE() &#123; return lazyModeSingleton; &#125; &#125; public static LazyModeSingleton getInstance()&#123; return LazySingleton.INSTANCE.getINSTANCE(); &#125;&#125; 2.2 饿汉式 所谓饿汉式就是随着类的加载，类的实例已经创建，保证线程安全性。 12345678public class HungryModeSingleton &#123; private static HungryModeSingleton hungryModeSingleton = new HungryModeSingleton(); private HungryModeSingleton()&#123; &#125; public static HungryModeSingleton getInstance()&#123; return hungryModeSingleton; &#125;&#125; 饿汉式单例设计模式天生自带线程安全光环，不必担心并发场景下线程安全问题，但是有个缺点：不管之后有没有使用到这个单例，都会驻留内存，存在一定的性能开销。 03 盲点剖析04 知识拓展 4.1 Java内存模型 4.2 volatile原理分析 4.3 synchronized原理分析 4.4 Java类加载原理 4.5 饿汉式和懒汉式应用场景 05 总结06 参考资料 单例模式 深入浅出单实例Singleton设计模式 JAVA设计模式之单例模式 枚举实现单例]]></content>
+      <categories>
+        <category>设计模式</category>
+      </categories>
+      <tags>
+        <tag>单例，设计模式</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[03 Java内存模型]]></title>
+    <url>%2Fp%2Ffe68.html</url>
+    <content type="text"><![CDATA[Java内存模型01 基础概念 1.1 内存模型结构 1.2 并发编程模型分类 1.3 重排序 1.4 顺序一致性 1.5 内存语义 volatile 锁 final域 02 盲点剖析 2.1 happens-before 2.2 03 知识拓展04 本章总结]]></content>
+      <categories>
+        <category>Java并发编程</category>
+      </categories>
+      <tags>
+        <tag>多线程</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[02 线程安全性]]></title>
+    <url>%2Fp%2Ffe68.html</url>
+    <content type="text"><![CDATA[线程安全01 基础概念 线程安全性 在项目实践过程中，为了提升应用性能，会在项目中使用多线程技术；但使用多线程进行并发处理，最重要的一点就是线程安全性，保证数据正确性。那什么是线程安全性？在《Java并发编程实战》这本书给到的解释是这样的：”在多个线程访问某个类时，不管运行时环境采用何种调度方式或者这些线程将如何交替执行，并且在主调代码中不需要任何额外的同步或协同，这个类都能表现出正确的行为。”在这段话中有两个关键词很重要，一个是调度方式，另一个是正确的行为。所谓调度方式：即*系统为线程分配处理器使用权的过程*，简单理解就是给线程分配处理器资源，让线程正常运转起来。主要的调度方式分为以下两种： 协同调度 线程执行时间由自己本身控制，线程执行完成后主动通知系统去切换其他线程。优点：实现简单，切换操作由自己控制，没有线程安全问题；缺点：执行时间不可控，一旦某个线程出现问题，会造成其他线程一直被阻塞的情况。 抢占式调度 线程执行时间由系统控制，通常采用轮转时间片的方式进行线程切换。优点：执行时间可控，不会因为一个线程出问题导致整体阻塞。缺点：需要考虑线程安全问题，系统开销大。在Java中，对线程的调度方式就是采用抢占式调度。 正确的行为：我的个人理解是多线程并发访问类的预期结果与单线程访问类的执行结果相同。 从线程安全的定义来看：线程安全性与调度方式和执行次序无关。 竞态条件 代码示例 2.1： public class UnSafeCountingFactorizer implements Selrvlet { private long count = 0; public long getCOunt(){ return count; } public voud service(ServletRequest req, ServletResponse resp){ BIgInterger i = extractFromRequest(req); BIgInteger[] factors = factor(i); ++count; encodeIntoResponse(resp,factors) } } ​ 竞态条件的定义：在并发编程中，由于不恰当的执行时序而出现不正确结果。如代码示例2.1就存在竞态条件，其中++count就是竞态条件。刚接触Java时，错误地认为++count操作就是一个原子操作，事实上JVM执行的操作粒度是基于CPU指令的，所以对于++count操作可能会按照该顺序执行：①从内存中读取count值放入寄存器中；②将寄存器中的count值进行加1操作；③将寄存器中最终的值回写至内存中；该顺序并不是绝对的，因为cpu为了优化性能，会对指令重排序，所以②和③顺序并不总是如此。如图2.1所示：@todo 补充示意图 ​ 最常见的竞态条件为先检测后执行，我看有些博客中会将延迟初始化也归为竞态条件类型的一种，这是明显错误的见解，准确地来说延迟初始化是先检测后执行的具体应用。代码示例 2.2，即为延迟初始化的具体实践： public class LazyInitRace{ private ExpensiveObject instance = null; public ExpensiveObject getInstance(){ if (instance == null) instance =new ExpensiveObject() return instance } } ​ 在代码示例2.2中包含了一个竞态条件，它会破坏类的执行结果。存在这样一种情况：线程A和B如果同时执行getInstance()方法，线程A看到instance为空，因而对instance实例进行初始化。线程B同样需要判定instance是否为空，此时instance是否为空取决于线程的调度方式，线程的执行顺序以及线程A初始化的时间。这些不确定因素都会导致线程B的执行结果不一致。@todo 补充示意图 注：new ExpensiveObject()做了三件事：1.在堆内存开辟一块空间；2.调用构造函数，进行对象初始化；3.将对象生成的内存地址返回给对象引用。 原子性 最小的执行单元，不可分割，要么全部执行成功要么全部执行失败，有种”同生共死”的感觉。对应MySQL数据库事务的四大特性ACID中A(Atomicity)。 https://blog.csdn.net/qq_27680317/article/details/78486220 https://coolshell.cn/articles/10249.html https://zhuanlan.zhihu.com/p/37749443 3.1处理器实现原子性 * 总线加锁 * 缓存加锁 3.2 Java实现原子性 循环CAS操作 内部实现是利用处理器提供的CMPXCHG指令完成的。存在三点弊端：①ABA问题；②循环时间开销大；③只能保证一个共享变量的原子操作；@todo 循环CAS操作 锁机制 偏向锁，轻量级锁和互斥锁 02 盲点剖析 synchronized volatile Java对象头 01 03 知识拓展 单例设计模式 01，02，03，04 时间片轮转调度 01，02 Java内存模型 01，02，03 Java并发特性 04 本章总结]]></content>
+      <categories>
+        <category>Java并发编程</category>
+      </categories>
+      <tags>
+        <tag>多线程</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title><![CDATA[happerns-Before规则]]></title>
+    <url>%2Fp%2Ffe68.html</url>
+    <content type="text"><![CDATA[含义具体规则1.程序的顺序性规则2.volatile变量规则3.传递性4.管程中锁的规则5.线程start()规则6.线程Join规则]]></content>
+      <categories>
+        <category>java基础</category>
+      </categories>
+      <tags>
+        <tag>多线程</tag>
+      </tags>
+  </entry>
+  <entry>
     <title><![CDATA[Hello World]]></title>
-    <url>%2Fp%2Fundefined.html</url>
+    <url>%2Fp%2F3eeb.html</url>
     <content type="text"><![CDATA[Welcome to Hexo! This is your very first post. Check documentation for more info. If you get any problems when using Hexo, you can find the answer in troubleshooting or you can ask me on GitHub. Quick StartCreate a new post1$ hexo new "My New Post" More info: Writing Run server1$ hexo server More info: Server Generate static files1$ hexo generate More info: Generating Deploy to remote sites1$ hexo deploy More info: Deployment]]></content>
       <categories>
         <category>杂记</category>
